@@ -1,0 +1,80 @@
+        
+        # ASSET VALIDATION & REPLACEMENT (Moved to END to avoid Self-Review context explosion)
+        assets = state.get("extracted_assets", {})
+        
+        # 1. Check for legacy placeholders (still invalid)
+        placeholder_patterns = [
+            r'src=["\']path-to-[^"\']*["\']',
+            r'src=["\']placeholder[^"\']*["\']',
+            r'src=["\']/assets/[^"\']*["\']',
+            r'src=["\']\.{1,2}/[^"\']*\.(png|jpg|svg|jpeg|gif)["\']'
+        ]
+        
+        detected_placeholders = []
+        for pattern in placeholder_patterns:
+             matches = re.findall(pattern, code)
+             detected_placeholders.extend(matches)
+             
+        if detected_placeholders:
+            logger.warning(f"❌ Legacy placeholders detected: {detected_placeholders}")
+            # Try to auto-fix legacy placeholders by mapping to first asset if available (fallback)
+            if assets:
+                await emit_log(state, "developer", "⚠️  Legacy placeholders found. Attempting to fix...", level="warning")
+                for pattern in placeholder_patterns:
+                    # Replace with the first asset's Data URI directly (skip token)
+                    first_asset_name = list(assets.keys())[0]
+                    first_asset_uri = assets[first_asset_name]
+                    code = re.sub(pattern, f'src="{first_asset_uri}"', code)
+
+        # 2. TOKEN REPLACEMENT via AssetHandler
+        # Note: asset_handler was initialized above
+        
+        code, replaced_count, missing_tokens = asset_handler.replace_tokens(code)
+        
+        if replaced_count > 0:
+            await emit_log(state, "developer", f"✅ Successfully replaced {replaced_count} asset tokens with URLs", 
+                           level="success", progress=calculate_progress(phase, 0.98), phase=phase)
+        
+        if missing_tokens:
+             await emit_log(state, "developer", f"⚠️  Warning: {len(missing_tokens)} tokens missing from code: {missing_tokens}", 
+                            level="warning", progress=calculate_progress(phase, 0.98), phase=phase)
+             
+             # FALLBACK: Try to auto-inject assets into any img tags with broken sources
+             # Only if we have NO valid replacements yet (nuclear option)
+             if replaced_count == 0 and assets:
+                 logger.warning("🔧 Attempting fallback: Auto-injecting assets into img tags...")
+                 # Exclude data:image AND /assets/ (which means it's already fixed)
+                 img_pattern = r'<img\s+([^>]*?)src=["\']((?!data:image|/assets/)[^"\']*)["\']([^>]*?)/?>'
+                 img_matches = re.findall(img_pattern, code)
+                 
+                 if img_matches:
+                     # Replace first broken img with first asset
+                     # We iterate through available assets and try to plug them in blindly
+                     # This is a desperation move
+                     
+                     for i, (uri) in enumerate(assets.values()):
+                         if i >= len(img_matches): break
+                         # Simple substitution for first match, then second... 
+                         pass
+
+                     first_asset_uri = list(assets.values())[0]
+                     code = re.sub(img_pattern, f'<img \\1src="{first_asset_uri}"\\3/>', code, count=len(assets))
+                     await emit_log(state, "developer", f"🔧 Fallback: Auto-injected {min(len(img_matches), len(assets))} assets into img tags", 
+                                    level="warning", progress=calculate_progress(phase, 0.99), phase=phase)
+        
+        
+        # 3. Final Verification (Assets should now be present)
+        # Check for /assets/ usage (or data:image if upload mode used that)
+        assets_present_count = len(re.findall(r'src=["\'](/assets/|data:image)', code))
+        
+        # Check for remaining __ASSET_X__ tokens
+        remaining_tokens = len(re.findall(r'__ASSET_\d+__', code))
+        
+        if remaining_tokens > 0:
+            logger.error(f"❌ CRITICAL: {remaining_tokens} tokens still remain in code after replacement!")
+        
+        if assets and assets_present_count == 0:
+             # This means replacement failed or LLM didn't use tokens OR Data URIs
+             await emit_log(state, "developer", "⚠️  Final code check: No Assets links found. Images may be broken.", level="warning")
+        elif assets:
+             await emit_log(state, "developer", f"✅ Final Code Integration: {assets_present_count} images embedded successfully", level="success")

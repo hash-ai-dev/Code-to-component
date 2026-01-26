@@ -1,0 +1,32 @@
+1. Backend Setup
+Navigate to the backend directory and install dependencies:
+
+cd backend
+pip install -r requirements.txt
+Create a .env file (see 
+.env.example
+) and add your keys:
+
+FIGMA_API_TOKEN
+HUGGING_FACE_TOKEN
+Run the server:
+
+uvicorn main:app --reload
+2. Frontend Setup
+Navigate to the frontend directory:
+
+cd frontend
+npm install
+npm run dev
+3. Usage
+Open http://localhost:3000.
+Paste a Figma Node URL (e.g., https://www.figma.com/file/KEY/Title?node-id=0:1).
+Click Generate.
+Watch the Agents work in the generic terminal logs.
+See the live result in the Sandpack preview.
+
+
+Figma: figd_hkBtYA93hdC2FMa9PrCWx46mFWlhGtDY4lM4QJQn
+
+
+Hugging Face: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

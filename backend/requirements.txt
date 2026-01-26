@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-dotenv
+httpx
+pydantic
+langgraph
+langchain
+langchain-community
+huggingface_hub
+requests
+python-multipart
+websockets
+aiofiles

@@ -1,0 +1,27 @@
+To create a ZIP file that gives the best results for your React component, you should "pre-slice" the design for the AI. This replaces the need for the Figma API by manually giving the tool the individual pieces it needs.
+
+Follow these steps in Figma:
+
+1. Identify the "Reference" Image
+Select the entire Login Page Frame.
+In the right-hand panel, go to Export, select PNG (2x), and click Export.
+Rename this file to: Main_Design.png. (This tells the AI what the whole page should look like).
+2. Export Individual Assets (The "Stickers")
+You need to give the AI the specific images it can't draw with code:
+
+The Illustration: Select the Skeleton illustration. Export it as a PNG (or SVG) with a transparent background. Rename it to illustration_skeleton.png.
+The Icons: Select the Google Logo and any other custom icons. Export them as SVGs. Rename them to google_logo.svg or icon_mail.svg.
+Note: You do NOT need to export buttons, inputs, or text. The AI is very good at coding those perfectly.
+3. Proper ZIP Structure
+Put all these files into a single folder on your computer.
+Your folder should look like this:
+text
+/my-design-assets/
+├── Main_Design.png         (The visual guide)
+├── illustration_skeleton.png (The complex art)
+└── google_logo.svg         (The vector logo)
+Select all files, right-click, and Compress/Zip them.
+⚠️ Important Note
+Currently, the tool's "Upload ZIP" feature is set up to only pick the first image it finds.
+
+Would you like me to update the backend code now to support this "Multi-Asset ZIP" format? If I do, the AI will be able to see the Main_Design for the layout and use the other files (like the skeleton and logos) as actual assets in your React code.
